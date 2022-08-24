@@ -1,0 +1,420 @@
+---
+title: "AD timeline paper"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+
+```{r header, include=FALSE}
+library(here)
+source( here::here("scripts", "00-libraries.R") )
+source( here::here("scripts", "01-function varfile.R") )
+source( here::here("scripts", "01-function plotloop.R") )
+source( here::here("scripts", "01-function mortplot.R") )
+source( here::here("scripts", "01-function nacctable.R") )
+source( here::here("scripts", "01-function nacctable2.R") )
+source( here::here("scripts", "02-import data.R") )
+
+
+```
+## Overview
+
+Describe and model timeline for each CDR stage of AD and identify factors that mediate the timeline.
+
+
+```{r parms, include=FALSE}
+col.array<-c("forestgreen","navy","black")
+left.table=-1
+table.shift=1
+table.shift2=.5
+Y.line=0
+x.cross=0
+x.upper=10
+x.lower=0
+y.lower=0
+y.upper=1
+tic.int=2
+Ylab="Percent"
+x.text.pos=(-1)
+p.lim=0.25 # width of progression length CI
+
+
+Ns.pos=-0.2
+```
+
+
+## NACC data
+
+Data construction (from cdr=X):\
+1. select all NACC participants with cdr=x-1 at some point\
+2. find first cdr=x--define this as first visit\
+3. events defined in this order:\
++ event = 1, time to first CDR $\ge$ x+1\
++ event = 2, time to death (in the case that CDR never gets past x), only coded when CDR evaluated within 1.5y of death\
++ event = 0, time to last CDR evaluation
+
+
+### CDR 0.5 progression (incident CDR$=0.5$ to CDR $\ge 2$)
+
+```{r cdr05, echo=FALSE}
+mat1=nacc.table(cdr05.1)
+options(knitr.kable.NA = '')
+kable(mat1,caption="",align="llcclcclccl")
+```
+
+mean years observed (SD)
+
+```{r cdr5.yrs, echo=FALSE}
+y=rep(0,4)
+dat=cdr05.1
+y[1]=round(mean(dat$yrs),1)
+y[2]=round(mean(dat$yrs[dat$event==0]),1)
+y[3]=round(mean(dat$yrs[dat$event==1]),1)
+y[4]=round(mean(dat$yrs[dat$event==2]),1)
+
+y2=rep(0,4)
+y2[1]=round(sqrt(var(dat$yrs)),1)
+y2[2]=round(sqrt(var(dat$yrs[dat$event==0])),1)
+y2[3]=round(sqrt(var(dat$yrs[dat$event==1])),1)
+y2[4]=round(sqrt(var(dat$yrs[dat$event==2])),1)
+
+a=c(paste("All: ",y[1]," (",y2[1],")",sep=""),
+paste("Censored: ",y[2]," (",y2[2],")",sep=""),
+paste("AD progression: ",y[3]," (",y2[3],")",sep=""),
+paste("Deceased: ",y[4]," (",y2[4],")",sep=""))
+
+kable(a,caption="")
+
+```
+
+```{r CDR.5, echo=FALSE}
+################################################
+
+main.text0="CDR 0.5 AD to >=1"
+x.text="years from CDR 0.5 AD"
+dat0=cdr05.1
+dat0=dat0[dat0$nacc_addx_t1==1,]
+
+
+age.table=table(dat0$age.group10)
+age.groups=names(age.table)
+t.max=10
+i=1
+main.text=paste("All ages: ",main.text0,sep="")
+  dat1=dat0
+  plot.loop()
+for(i in 1:length(age.groups)){
+  main.text=paste("Age ",age.groups[i],": ",main.text0,sep="")
+  dat1=dat0[dat0$age.group10==age.groups[i],]
+  plot.loop()}
+
+
+
+```
+Look at 2, 5 and 10y outcomes (where death trumps AD)
+
+```{r CDR.5.outcomes, echo=FALSE}
+################################################
+#CDR 0.5 AD to >=1
+
+dat=cdr05.1
+table(dat$age.group10)
+
+t1=2
+out.2y=ifelse((dat$yrs_death<=t1)&(dat$death_event==1),"2-Deceased",
+              ifelse((dat$event==1)&(dat$yrs<=t1),"1-AD progression",
+                     ifelse(dat$yrs>t1,"0-Alive w/o progression", NA)))
+table.2y=round(proportions(table(out.2y,dat$age.group10,useNA="ifany"),margin=2),2)
+table.2y
+
+t1=5
+y1=ifelse(dat$yrs>t1,1,0)
+y2=ifelse(dat$yrs_death>t1,1,0)
+
+out.5y=ifelse((dat$yrs_death<=t1)&(dat$death_event==1),"2-Deceased",
+              ifelse((dat$event==1)&(dat$yrs<=t1),"1-AD progression",
+                    ifelse(dat$yrs>t1,"0-Alive w/o progression", NA)))
+
+table.5y=round(proportions(table(out.5y,dat$age.group10,useNA="ifany"),margin=2),2)
+table.5y
+
+t1=10
+out.10y=ifelse((dat$yrs_death<=t1)&(dat$death_event==1),"2-Deceased",
+              ifelse((dat$event==1)&(dat$yrs<=t1),"1-AD progression",
+                     ifelse(dat$yrs>t1,"0-Alive w/o progression", NA)))
+table.10y=round(proportions(table(out.10y,dat$age.group10,useNA="ifany"),margin=2),2)
+table.10y
+```
+
+
+
+### CDR 1 progression (incident CDR$=1$ to CDR $\ge 2$)
+
+```{r cdr1, echo=FALSE}
+mat1=nacc.table(cdr1.23)
+options(knitr.kable.NA = '')
+kable(mat1,caption="",align="llcclcclccl")
+```
+
+mean years observed (SD)
+
+```{r cdr1.yrs, echo=FALSE}
+y=rep(0,4)
+dat=cdr1.23
+y[1]=round(mean(dat$yrs),1)
+y[2]=round(mean(dat$yrs[dat$event==0]),1)
+y[3]=round(mean(dat$yrs[dat$event==1]),1)
+y[4]=round(mean(dat$yrs[dat$event==2]),1)
+
+y2=rep(0,4)
+y2[1]=round(sqrt(var(dat$yrs)),1)
+y2[2]=round(sqrt(var(dat$yrs[dat$event==0])),1)
+y2[3]=round(sqrt(var(dat$yrs[dat$event==1])),1)
+y2[4]=round(sqrt(var(dat$yrs[dat$event==2])),1)
+
+a=c(paste("All: ",y[1]," (",y2[1],")",sep=""),
+paste("Censored: ",y[2]," (",y2[2],")",sep=""),
+paste("AD progression: ",y[3]," (",y2[3],")",sep=""),
+paste("Deceased: ",y[4]," (",y2[4],")",sep=""))
+
+kable(a,caption="")
+
+```
+```{r CDR.1, echo=FALSE}
+################################################
+main.text0="CDR 1 AD to >=2"
+x.text="years from CDR 1 AD"
+dat0=cdr1.23
+
+main.text=paste("All ages: ",main.text0,sep="")
+dat1=dat0
+plot.loop()
+```
+
+```{r CDR.1.age, echo=FALSE}
+################################################  
+age.table=table(dat0$age.group10)
+age.groups=names(age.table)
+t.max=8
+
+par(mfrow=c(1,1))
+for(i in 1:length(age.groups)){
+  main.text=paste("Age ",age.groups[i],": ",main.text0,sep="")
+  dat1=dat0[dat0$age.group10==age.groups[i],]
+  plot.loop()}
+```
+CDR 1 AD outcomes
+
+```{r CDR.1.outcomes, echo=FALSE}
+################################################
+dat=cdr1.23
+table(dat$age.group10)
+
+t1=2
+out.2y=ifelse((dat$yrs_death<=t1)&(dat$death_event==1),"2-Deceased",
+              ifelse((dat$event==1)&(dat$yrs<=t1),"1-AD progression",
+                     ifelse(dat$yrs>t1,"0-Alive w/o progression", NA)))
+table.2y=round(proportions(table(out.2y,dat$age.group10,useNA="ifany"),margin=2),2)
+table.2y
+
+t1=5
+y1=ifelse(dat$yrs>t1,1,0)
+y2=ifelse(dat$yrs_death>t1,1,0)
+
+out.5y=ifelse((dat$yrs_death<=t1)&(dat$death_event==1),"2-Deceased",
+              ifelse((dat$event==1)&(dat$yrs<=t1),"1-AD progression",
+                     ifelse(dat$yrs>t1,"0-Alive w/o progression", NA)))
+
+table.5y=round(proportions(table(out.5y,dat$age.group10,useNA="ifany"),margin=2),2)
+table.5y
+
+t1=10
+out.10y=ifelse((dat$yrs_death<=t1)&(dat$death_event==1),"2-Deceased",
+               ifelse((dat$event==1)&(dat$yrs<=t1),"1-AD progression",
+                      ifelse(dat$yrs>t1,"0-Alive w/o progression", NA)))
+table.10y=round(proportions(table(out.10y,dat$age.group10,useNA="ifany"),margin=2),2)
+table.10y
+```
+
+### CDR 2 progression (incident CDR$=2$ to CDR $=3$)
+
+```{r cdr2, echo=FALSE}
+mat1=nacc.table(cdr2.3)
+options(knitr.kable.NA = '')
+kable(mat1,caption="",align="llcclcclccl")
+```
+
+mean years observed (SD)
+
+```{r cdr2.yrs, echo=FALSE}
+y=rep(0,4)
+dat=cdr2.3
+y[1]=round(mean(dat$yrs),1)
+y[2]=round(mean(dat$yrs[dat$event==0]),1)
+y[3]=round(mean(dat$yrs[dat$event==1]),1)
+y[4]=round(mean(dat$yrs[dat$event==2]),1)
+
+y2=rep(0,4)
+y2[1]=round(sqrt(var(dat$yrs)),1)
+y2[2]=round(sqrt(var(dat$yrs[dat$event==0])),1)
+y2[3]=round(sqrt(var(dat$yrs[dat$event==1])),1)
+y2[4]=round(sqrt(var(dat$yrs[dat$event==2])),1)
+
+a=c(paste("All: ",y[1]," (",y2[1],")",sep=""),
+paste("Censored: ",y[2]," (",y2[2],")",sep=""),
+paste("AD progression: ",y[3]," (",y2[3],")",sep=""),
+paste("Deceased: ",y[4]," (",y2[4],")",sep=""))
+
+kable(a,caption="")
+
+```
+```{r CDR.2, echo=FALSE}
+################################################
+main.text0="CDR 2 AD to 3"
+x.text="years from CDR 2 AD"
+dat0=cdr2.3
+
+main.text=paste("All ages: ",main.text0,sep="")
+dat1=dat0
+plot.loop()
+
+
+```
+
+```{r CDR.2.age, echo=FALSE}
+################################################
+age.table=table(dat0$age.group10)
+age.groups=names(age.table)
+t.max=8
+
+par(mfrow=c(1,1))
+for(i in 1:length(age.groups)){
+  main.text=paste("Age ",age.groups[i],": ",main.text0,sep="")
+  dat1=dat0[dat0$age.group10==age.groups[i],]
+  plot.loop()}
+
+```
+CDR 2 AD outcomes
+
+```{r CDR.2.outcomes, echo=FALSE}
+################################################
+dat=cdr2.3
+table(dat$age.group10)
+
+t1=2
+out.2y=ifelse((dat$yrs_death<=t1)&(dat$death_event==1),"2-Deceased",
+              ifelse((dat$event==1)&(dat$yrs<=t1),"1-AD progression",
+                     ifelse(dat$yrs>t1,"0-Alive w/o progression", NA)))
+table.2y=round(proportions(table(out.2y,dat$age.group10,useNA="ifany"),margin=2),2)
+table.2y
+
+
+t1=5
+y1=ifelse(dat$yrs>t1,1,0)
+y2=ifelse(dat$yrs_death>t1,1,0)
+
+out.5y=ifelse((dat$yrs_death<=t1)&(dat$death_event==1),"2-Deceased",
+              ifelse((dat$event==1)&(dat$yrs<=t1),"1-AD progression",
+                     ifelse(dat$yrs>t1,"0-Alive w/o progression", NA)))
+
+table.5y=round(proportions(table(out.5y,dat$age.group10,useNA="ifany"),margin=2),2)
+table.5y
+
+t1=10
+out.10y=ifelse((dat$yrs_death<=t1)&(dat$death_event==1),"2-Deceased",
+               ifelse((dat$event==1)&(dat$yrs<=t1),"1-AD progression",
+                      ifelse(dat$yrs>t1,"0-Alive w/o progression", NA)))
+table.10y=round(proportions(table(out.10y,dat$age.group10,useNA="ifany"),margin=2),2)
+table.10y
+```
+
+### CDR 3 progression (incident CDR$=3$ to death)
+
+```{r cdr3, echo=FALSE}
+mat1=nacc.table2(cdr3.death)
+options(knitr.kable.NA = '')
+kable(mat1,caption="",align="llcclcclccl")
+```
+
+mean years observed (SD)
+
+```{r cdr3.yrs, echo=FALSE}
+y=rep(0,3)
+dat=cdr3.death
+y[1]=round(mean(dat$yrs),1)
+y[2]=round(mean(dat$yrs[dat$event==0]),1)
+y[3]=round(mean(dat$yrs[dat$event==1]),1)
+
+y2=rep(0,3)
+y2[1]=round(sqrt(var(dat$yrs)),1)
+y2[2]=round(sqrt(var(dat$yrs[dat$event==0])),1)
+y2[3]=round(sqrt(var(dat$yrs[dat$event==1])),1)
+
+a=c(paste("All: ",y[1]," (",y2[1],")",sep=""),
+paste("Censored: ",y[2]," (",y2[2],")",sep=""),
+paste("Deceased: ",y[3]," (",y2[3],")",sep=""))
+
+kable(a,caption="")
+
+```
+
+
+
+```{r CDR.3, echo=FALSE}
+################################################
+main.text0="CDR 3 AD mortality"
+x.text="years from CDR 3 AD"
+dat0=cdr3.death
+
+main.text=paste("All ages: ",main.text0,sep="")
+dat1=dat0
+mort.plot()
+
+
+
+```
+
+```{r CDR.3.age, echo=FALSE}
+################################################
+age.table=table(dat0$age.group10)
+age.groups=names(age.table)
+t.max=10
+
+par(mfrow=c(1,1))
+for(i in 1:length(age.groups)){
+  main.text=paste("Age ",age.groups[i],": ",main.text0,sep="")
+  dat1=dat0[dat0$age.group10==age.groups[i],]
+  mort.plot()}
+
+```
+
+
+
+
+
+```{r CDR.3.outcomes, echo=FALSE}
+################################################
+dat=cdr3.death
+table(dat$age.group10)
+
+t1=2
+out.2y=ifelse((dat$yrs<=t1)&(dat$event==1),"2-Deceased",
+              ifelse(dat$yrs>t1,"0-Alive w/o progression", NA))
+table.2y=round(proportions(table(out.2y,dat$age.group10,useNA="ifany"),margin=2),2)
+table.2y
+
+t1=5
+out.5y=ifelse((dat$yrs<=t1)&(dat$event==1),"2-Deceased",
+              ifelse(dat$yrs>t1,"0-Alive w/o progression", NA))
+
+table.5y=round(proportions(table(out.5y,dat$age.group10,useNA="ifany"),margin=2),2)
+table.5y
+
+t1=10
+out.10y=ifelse((dat$yrs<=t1)&(dat$event==1),"2-Deceased",
+              ifelse(dat$yrs>t1,"0-Alive w/o progression", NA))
+table.10y=round(proportions(table(out.10y,dat$age.group10,useNA="ifany"),margin=2),2)
+table.10y
+```
