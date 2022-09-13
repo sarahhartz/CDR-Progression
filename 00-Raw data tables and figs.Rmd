@@ -418,3 +418,5 @@ out.10y=ifelse((dat$yrs<=t1)&(dat$event==1),"2-Deceased",
 table.10y=round(proportions(table(out.10y,dat$age.group10,useNA="ifany"),margin=2),2)
 table.10y
 ```
+
+NEW EDIT HERE
